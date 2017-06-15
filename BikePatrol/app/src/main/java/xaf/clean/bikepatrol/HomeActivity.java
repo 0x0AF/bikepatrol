@@ -69,7 +69,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Fabric.with(this, new Answers(), new Crashlytics());
-        setContentView(R.layout.activity_home);
+        setContentView(R.layout.activity_action);
 
         cameraView = (CameraView) findViewById(R.id.camera);
         vibrator = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
