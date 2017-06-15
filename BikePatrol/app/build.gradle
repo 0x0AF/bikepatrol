@@ -38,6 +38,8 @@ android {
 }
 
 dependencies {
+    compile 'com.github.nisrulz:sensey:1.7.0'
+    compile 'com.flurgle:camerakit:0.9.17'
     compile 'com.github.SandroMachado:openalpr-android:1.1.2'
     compile 'org.twitter4j:twitter4j-core:4.0.6'
     compile 'com.android.support:appcompat-v7:25.3.1'
