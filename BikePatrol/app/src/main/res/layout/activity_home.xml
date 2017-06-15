@@ -1,28 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_home"
+
+<com.flurgle.camerakit.CameraView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:camerakit="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/camera"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="xaf.clean.bikepatrol.HomeActivity">
-
-    <com.flurgle.camerakit.CameraView xmlns:camerakit="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/camera"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        camerakit:ckFacing="back"
-        camerakit:ckFlash="off"
-        camerakit:ckFocus="continuous"
-        camerakit:ckMethod="standard"
-        camerakit:ckZoom="off"
-        camerakit:ckPermissions="strict"
-        camerakit:ckCropOutput="true"
-        camerakit:ckJpegQuality="100"
-        camerakit:ckVideoQuality="max720p"
-        android:adjustViewBounds="true" />
-
-</RelativeLayout>
+    android:adjustViewBounds="true"
+    camerakit:ckCropOutput="true"
+    camerakit:ckFacing="back"
+    camerakit:ckFlash="auto"
+    camerakit:ckFocus="continuous"
+    camerakit:ckJpegQuality="100"
+    camerakit:ckMethod="standard"
+    camerakit:ckPermissions="strict"
+    camerakit:ckVideoQuality="max720p"
+    camerakit:ckZoom="off" />
