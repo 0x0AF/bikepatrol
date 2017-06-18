@@ -46,7 +46,7 @@ android {
 dependencies {
     compile 'com.github.nisrulz:sensey:1.7.0'
     compile 'com.flurgle:camerakit:0.9.17'
-    compile 'com.github.SandroMachado:openalpr-android:1.1.2'
+//    compile 'com.github.SandroMachado:openalpr-android:1.1.2'
     compile 'org.twitter4j:twitter4j-core:4.0.6'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:design:25.3.1'
@@ -61,4 +61,7 @@ dependencies {
     compile 'com.google.maps.android:android-maps-utils:0.5'
     compile "com.mikepenz:iconics-core:2.8.4@aar"
     compile 'com.mikepenz:google-material-typeface:3.0.1.0.original@aar'
+    compile('com.mikepenz:aboutlibraries:5.8.1@aar') { // About page automation
+        transitive = true
+    }
 }

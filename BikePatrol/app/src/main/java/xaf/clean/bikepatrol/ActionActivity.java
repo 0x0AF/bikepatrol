@@ -66,7 +66,7 @@ public class ActionActivity extends AppCompatActivity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
-        setContentView(R.layout.activity_home);
+        setContentView(R.layout.activity_action);
 
         mActionLocationListener = new ActionLocationListener();
 

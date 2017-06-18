@@ -41,20 +41,30 @@ class ActionTouchListener implements TouchTypeDetector.TouchTypListener {
     @Override
     public void onSwipe(int swipeDirection) {
         Log.d(getClass().getName(), "onSwipe");
-        if (state == State.IDLE) {
-            state = State.VIDEO;
-            cameraView.startRecordingVideo();
-            cameraView.postDelayed(() -> {
-                state = State.IDLE;
-                cameraView.stopRecordingVideo();
-            }, 10000);
+
+        switch (swipeDirection) {
+            case TouchTypeDetector.SWIPE_DIR_DOWN:
+                if (state == State.IDLE) {
+                    state = State.PHOTO;
+                    cameraView.captureImage();
+                    state = State.IDLE;
+                }
+                break;
+            case TouchTypeDetector.SWIPE_DIR_UP:
+                if (state == State.IDLE) {
+                    state = State.VIDEO;
+                    cameraView.startRecordingVideo();
+                    cameraView.postDelayed(() -> {
+                        state = State.IDLE;
+                        cameraView.stopRecordingVideo();
+                    }, 10000);
+                }
+                break;
         }
     }
 
     @Override
     public void onLongPress() {
-        if (state == State.IDLE)
-            cameraView.toggleFacing();
     }
 
     private enum State {

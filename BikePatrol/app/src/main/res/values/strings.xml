@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Bike Patrol</string>
+    <string name="title_activity_home">Bike Patrol</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="reports">Reports</string>
+    <string name="share">Share</string>
+    <string name="about">About</string>
+    <string name="bike_patrol">Bike Patrol</string>
 </resources>

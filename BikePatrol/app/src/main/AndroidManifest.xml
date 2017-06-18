@@ -16,15 +16,22 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ActionActivity">
+        <activity android:name=".ActionActivity" />
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="69fc1f3d9050522f144420e93017824b0093c427" />
+
+        <activity
+            android:name=".HomeActivity"
+            android:label="@string/title_activity_home"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <meta-data
-            android:name="io.fabric.ApiKey"
-            android:value="69fc1f3d9050522f144420e93017824b0093c427" />
     </application>
+
 </manifest>
