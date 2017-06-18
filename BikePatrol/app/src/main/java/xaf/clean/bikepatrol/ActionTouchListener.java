@@ -31,7 +31,7 @@ class ActionTouchListener implements TouchTypeDetector.TouchTypListener {
     @Override
     public void onScroll(int scrollDirection) {
         if (state == State.IDLE)
-            vibrator.vibrate(100);
+            vibrator.vibrate(10);
     }
 
     @Override
@@ -53,12 +53,8 @@ class ActionTouchListener implements TouchTypeDetector.TouchTypListener {
 
     @Override
     public void onLongPress() {
-        if (state == State.IDLE) {
-            state = State.PHOTO;
-            vibrator.vibrate(500);
-            cameraView.captureImage();
-            state = State.IDLE;
-        }
+        if (state == State.IDLE)
+            cameraView.toggleFacing();
     }
 
     private enum State {
