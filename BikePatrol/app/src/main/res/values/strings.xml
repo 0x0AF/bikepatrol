@@ -10,4 +10,14 @@
     <string name="share">Share</string>
     <string name="about">About</string>
     <string name="bike_patrol">Bike Patrol</string>
+    <string name="view_community_reports">View community reports</string>
+    <string name="rep_sync">Report synchronized with community</string>
+    <string name="vis_com">Visit community page</string>
+    <string name="rep_del">Report deleted</string>
+    <string name="title_activity_report">ReportActivity</string>
+    <string name="mark_as_sensitive">Mark as sensitive</string>
+    <string name="keep_the_audio">Keep audio</string>
+    <string name="description">Note</string>
+    <string name="keep_the_location">Keep location</string>
+    <string name="sync">Sync</string>
 </resources>

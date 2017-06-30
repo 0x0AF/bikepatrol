@@ -1,4 +1,4 @@
-package xaf.clean.bikepatrol;
+package xaf.clean.bikepatrol.util;
 
 import android.os.Environment;
 import android.util.Log;
@@ -9,8 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-@SuppressWarnings("WeakerAccess")
-class ExternalStorage {
+public class ExternalStorage {
 
     public static final int MEDIA_DOCUMENT = 0;
     public static final int MEDIA_TYPE_IMAGE = 1;
@@ -47,7 +46,7 @@ class ExternalStorage {
         return mediaStorageDir;
     }
 
-    static File getOutputMediaFile(int type) {
+    public static File getOutputMediaFile(int type) {
 
         File mediaStorageDir = getOutputMediaDirectory(type);
 

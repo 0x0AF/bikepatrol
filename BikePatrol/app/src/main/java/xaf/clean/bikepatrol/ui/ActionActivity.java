@@ -1,10 +1,13 @@
-package xaf.clean.bikepatrol;
+package xaf.clean.bikepatrol.ui;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.support.design.widget.Snackbar;
@@ -16,8 +19,10 @@ import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
 import com.crashlytics.android.answers.Answers;
+import com.flurgle.camerakit.CameraListener;
 import com.flurgle.camerakit.CameraView;
 import com.github.nisrulz.sensey.Sensey;
+import com.github.nisrulz.sensey.TouchTypeDetector;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationRequest;
@@ -25,21 +30,24 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Date;
+
 import io.fabric.sdk.android.Fabric;
+import io.realm.Realm;
+import xaf.clean.bikepatrol.R;
+import xaf.clean.bikepatrol.model.Report;
+import xaf.clean.bikepatrol.util.ExternalStorage;
+import xaf.clean.bikepatrol.util.TwitterApi;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
-import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static xaf.clean.bikepatrol.ui.HomeActivity.PERMISSIONS;
+import static xaf.clean.bikepatrol.ui.HomeActivity.REQUEST_CHECK_SETTINGS;
 
 public class ActionActivity extends AppCompatActivity {
-
-    private static final String[] PERMISSIONS = new String[]{
-            ACCESS_FINE_LOCATION,
-            ACCESS_COARSE_LOCATION,
-            READ_EXTERNAL_STORAGE,
-            WRITE_EXTERNAL_STORAGE
-    };
 
     private CameraView mCameraView;
     private Vibrator mVibrator;
@@ -52,7 +60,7 @@ public class ActionActivity extends AppCompatActivity {
     private LocationRequest mLocationRequest;
     private LocationSettingsRequest mLocationSettingsRequest;
 
-    private int REQUEST_CHECK_SETTINGS = 0xAF;
+    private Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,29 +94,17 @@ public class ActionActivity extends AppCompatActivity {
         mCameraView = (CameraView) findViewById(R.id.camera);
         mVibrator = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
 
-        mActionTouchListener = new ActionTouchListener(mCameraView, mVibrator);
-        mActionCameraListener = new ActionCameraListener(this);
+        mActionTouchListener = new ActionTouchListener();
+        mActionCameraListener = new ActionCameraListener();
 
         mCameraView.setCameraListener(mActionCameraListener);
 
         Sensey.getInstance().init(this);
         Sensey.getInstance().startTouchTypeDetection(this, mActionTouchListener);
 
-        // TODO: interface
-        //    new AsyncTask<Void, Void, Void>() {
-        //
-        //        @Override
-        //        protected Void doInBackground(Void... params) {
-        //            try {
-        //                api.postText("test");
-        //            } catch (TwitterException e) {
-        //                Log.e(ActionActivity.class.getName(), "Update failed", e);
-        //            }
-        //            return null;
-        //        }
-        //    }.execute();
-
         tryRequestLocationUpdates();
+
+        realm = Realm.getDefaultInstance();
     }
 
     @Override
@@ -153,6 +149,7 @@ public class ActionActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Sensey.getInstance().stop();
+        realm.close();
     }
 
     @Override
@@ -195,5 +192,139 @@ public class ActionActivity extends AppCompatActivity {
                         .show();
             }
         });
+    }
+
+    private enum State {
+        IDLE, PHOTO, VIDEO
+    }
+
+    private class ActionCameraListener extends CameraListener {
+
+        @Override
+        public void onPictureTaken(byte[] jpeg) {
+            super.onPictureTaken(jpeg);
+
+            Bitmap bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.length);
+
+            File output = ExternalStorage.getOutputMediaFile(ExternalStorage.MEDIA_TYPE_IMAGE);
+
+            if (output != null) {
+                try {
+                    FileOutputStream out = new FileOutputStream(output);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                    out.flush();
+                    out.close();
+
+                    realm.executeTransaction(realm1 -> {
+                        Report report = realm1.createObject(Report.class);
+                        report.setType(Report.TYPE_PICTURE);
+
+                        Location l = mActionLocationListener.getLocation();
+                        if (l != null) {
+                            report.setLatitude(l.getLatitude());
+                            report.setLongitude(l.getLongitude());
+                        }
+
+                        report.setTimestamp(new Date().getTime());
+                        report.setMediaAbsolutePath(output.getAbsolutePath());
+                    });
+
+                } catch (Exception e) {
+                    Log.e(getClass().getName(), "Error writing picture", e);
+                }
+            }
+        }
+
+        @Override
+        public void onVideoTaken(File video) {
+            super.onVideoTaken(video);
+
+            File output = ExternalStorage.getOutputMediaFile(ExternalStorage.MEDIA_TYPE_VIDEO);
+
+            if (output != null) {
+                try (FileInputStream is = new FileInputStream(video);
+                     FileOutputStream os = new FileOutputStream(output)) {
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = is.read(buffer)) > 0) {
+                        os.write(buffer, 0, length);
+                    }
+
+                    realm.executeTransaction(realm1 -> {
+                        Report report = realm1.createObject(Report.class);
+                        report.setType(Report.TYPE_VIDEO);
+
+                        Location l = mActionLocationListener.getLocation();
+                        if (l != null) {
+                            report.setLatitude(l.getLatitude());
+                            report.setLongitude(l.getLongitude());
+                        }
+
+                        report.setTimestamp(new Date().getTime());
+                        report.setMediaAbsolutePath(output.getAbsolutePath());
+                    });
+                } catch (Exception e) {
+                    Log.e(getClass().getName(), "Error writing video", e);
+                }
+            }
+        }
+    }
+
+    private class ActionTouchListener implements TouchTypeDetector.TouchTypListener {
+        private State state = State.IDLE;
+
+        @Override
+        public void onTwoFingerSingleTap() {
+        }
+
+        @Override
+        public void onThreeFingerSingleTap() {
+        }
+
+        @Override
+        public void onDoubleTap() {
+        }
+
+        @Override
+        public void onScroll(int scrollDirection) {
+            if (state == State.IDLE)
+                mVibrator.vibrate(10);
+        }
+
+        @Override
+        public void onSingleTap() {
+        }
+
+        @Override
+        public void onSwipe(int swipeDirection) {
+            Log.d(getClass().getName(), "onSwipe");
+
+            switch (swipeDirection) {
+                case TouchTypeDetector.SWIPE_DIR_DOWN:
+                    if (state == State.IDLE) {
+                        state = State.PHOTO;
+                        mCameraView.captureImage();
+                        state = State.IDLE;
+                    }
+                    break;
+                case TouchTypeDetector.SWIPE_DIR_UP:
+                    if (state == State.IDLE) {
+                        state = State.VIDEO;
+                        mCameraView.startRecordingVideo();
+                        mCameraView.postDelayed(() -> {
+                            state = State.IDLE;
+                            mCameraView.stopRecordingVideo();
+                        }, 30000);
+                    }
+                    break;
+                default:
+                    finish();
+                    break;
+            }
+        }
+
+        @Override
+        public void onLongPress() {
+        }
     }
 }

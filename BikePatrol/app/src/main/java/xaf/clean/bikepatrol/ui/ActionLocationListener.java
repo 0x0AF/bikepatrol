@@ -1,4 +1,4 @@
-package xaf.clean.bikepatrol;
+package xaf.clean.bikepatrol.ui;
 
 import android.location.Location;
 import android.os.Bundle;
