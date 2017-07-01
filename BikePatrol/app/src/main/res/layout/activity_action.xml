@@ -12,5 +12,5 @@
     camerakit:ckJpegQuality="100"
     camerakit:ckMethod="standard"
     camerakit:ckPermissions="strict"
-    camerakit:ckVideoQuality="max720p"
+    camerakit:ckVideoQuality="max2160p"
     camerakit:ckZoom="off" />

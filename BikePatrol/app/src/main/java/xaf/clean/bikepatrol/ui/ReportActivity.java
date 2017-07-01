@@ -1,6 +1,7 @@
 package xaf.clean.bikepatrol.ui;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -8,11 +9,13 @@ import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PatternMatcher;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -21,11 +24,14 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.crashlytics.android.answers.Answers;
+import com.crashlytics.android.answers.CustomEvent;
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.text.TextBlock;
+import com.google.android.gms.vision.text.TextRecognizer;
 import com.mikepenz.google_material_typeface_library.GoogleMaterial;
 import com.mikepenz.iconics.Iconics;
 import com.mikepenz.iconics.IconicsDrawable;
-
-import org.openalpr.OpenALPR;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +48,7 @@ import xaf.clean.bikepatrol.util.TwitterApi;
 
 public class ReportActivity extends AppCompatActivity {
 
+    private static final String PATTERN_GERMAN_LP = "[0-9]{1,4}";
     private Report report;
     private Realm realm;
     private TextView reportTimestamp;
@@ -50,6 +57,7 @@ public class ReportActivity extends AppCompatActivity {
     private Switch reportKeepLocation;
     private Switch reportMarkSensitive;
     private EditText reportDescription;
+    private TextRecognizer textRecognizer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,9 +66,10 @@ public class ReportActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Iconics.init(this);
+        Answers.getInstance().logCustom(new CustomEvent("Report activity opened"));
 
-        getSupportActionBar().setDefaultDisplayHomeAsUpEnabled(true);
+        Iconics.init(this);
+        textRecognizer = new TextRecognizer.Builder(this).build();
 
         getSupportActionBar().setTitle("Sync report");
         getSupportActionBar().setHomeButtonEnabled(true);
@@ -114,6 +123,38 @@ public class ReportActivity extends AppCompatActivity {
                     reportThumbnail.setImageBitmap(bitmap);
                 }
             }.execute();
+
+            AsyncTask.execute(() -> {
+                if (!textRecognizer.isOperational()) {
+                    Log.w(ReportActivity.class.getName(), "Detector dependencies are not yet available.");
+
+                    IntentFilter lowstorageFilter = new IntentFilter(Intent.ACTION_DEVICE_STORAGE_LOW);
+                    boolean hasLowStorage = registerReceiver(null, lowstorageFilter) != null;
+
+                    if (hasLowStorage) {
+                        Toast.makeText(this, "Low Storage", Toast.LENGTH_LONG).show();
+                        Log.w(ReportActivity.class.getName(), "Low Storage");
+                    }
+                }
+
+                Frame imageFrame = new Frame.Builder()
+                        .setBitmap(BitmapFactory.decodeFile(mediaPath))
+                        .build();
+
+                SparseArray<TextBlock> textBlocks = textRecognizer.detect(imageFrame);
+
+                for (int i = 0; i < textBlocks.size(); i++) {
+                    TextBlock textBlock = textBlocks.get(textBlocks.keyAt(i));
+
+                    Log.i(ReportActivity.class.getName(), textBlock.getValue());
+
+                    PatternMatcher patternMatcher = new PatternMatcher(PATTERN_GERMAN_LP, 3);
+                    if (patternMatcher.match(textBlock.getValue())) {
+                        Log.i(ReportActivity.class.getName(), "MATCH");
+                        runOnUiThread(() -> reportDescription.getText().append(textBlock.getValue()));
+                    }
+                }
+            });
         } else {
             reportThumbnail.setOnClickListener(v -> {
                 Uri uri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", new File(mediaPath));
@@ -141,15 +182,6 @@ public class ReportActivity extends AppCompatActivity {
         final String timestamp = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.SHORT, SimpleDateFormat.SHORT).format(new Date(report.getTimestamp()));
 
         reportTimestamp.setText(timestamp);
-
-        String ANDROID_DATA_DIR = this.getApplicationInfo().dataDir;
-
-        AsyncTask.execute(() -> {
-            final String openAlprConfFile = ANDROID_DATA_DIR + File.separatorChar + "runtime_data" + File.separatorChar + "openalpr.conf";
-            String result = OpenALPR.Factory.create(ReportActivity.this, ANDROID_DATA_DIR).recognizeWithCountryRegionNConfig("eu", "", mediaPath, openAlprConfFile, 1);
-
-            Log.d("OPEN ALPR", result);
-        });
     }
 
     @Override
@@ -181,6 +213,8 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     private void syncReport(Report report) {
+        Answers.getInstance().logCustom(new CustomEvent("Report sync requested"));
+
         boolean keepLocation = reportKeepLocation.isChecked();
         boolean isSensitive = reportMarkSensitive.isChecked();
 

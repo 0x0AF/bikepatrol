@@ -20,7 +20,7 @@ repositories {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion "26"
     defaultConfig {
         applicationId "xaf.clean.bikepatrol"
         minSdkVersion 21
@@ -28,12 +28,13 @@ android {
         versionCode 102
         versionName "0.2"
         multiDexEnabled true
-
-        ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a'
-        }
     }
     buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -59,12 +60,13 @@ dependencies {
     compile 'io.realm:android-adapters:2.0.0'
     compile 'com.github.nisrulz:sensey:1.7.0'
     compile 'com.flurgle:camerakit:0.9.17'
-    compile 'com.github.SandroMachado:openalpr-android:1.1.2'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support:multidex:1.0.1'
-    compile 'com.google.android.gms:play-services-location:11.0.1'
+    compile 'com.google.android.gms:play-services-location:11.0.2'
+    compile 'com.google.android.gms:play-services-vision:11.0.2'
     compile 'com.google.maps.android:android-maps-utils:0.5'
     compile 'com.mikepenz:iconics-core:2.8.7@aar'
     compile 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
+    compile 'net.ypresto.androidtranscoder:android-transcoder:0.2.0'
 }

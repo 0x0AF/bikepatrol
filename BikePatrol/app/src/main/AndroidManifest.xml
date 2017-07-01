@@ -25,6 +25,10 @@
             android:name="io.fabric.ApiKey"
             android:value="69fc1f3d9050522f144420e93017824b0093c427" />
 
+        <meta-data
+            android:name="com.google.android.gms.vision.DEPENDENCIES"
+            android:value="ocr" />
+
         <activity
             android:name=".ui.HomeActivity"
             android:label="@string/title_activity_home"

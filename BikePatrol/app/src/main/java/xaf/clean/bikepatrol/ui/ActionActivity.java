@@ -19,6 +19,7 @@ import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
 import com.crashlytics.android.answers.Answers;
+import com.crashlytics.android.answers.CustomEvent;
 import com.flurgle.camerakit.CameraListener;
 import com.flurgle.camerakit.CameraView;
 import com.github.nisrulz.sensey.Sensey;
@@ -29,6 +30,9 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+
+import net.ypresto.androidtranscoder.MediaTranscoder;
+import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,7 +58,6 @@ public class ActionActivity extends AppCompatActivity {
     private ActionTouchListener mActionTouchListener;
     private ActionCameraListener mActionCameraListener;
     private ActionLocationListener mActionLocationListener;
-    private TwitterApi mTwitterApi;
 
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
@@ -65,8 +68,8 @@ public class ActionActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Answers(), new Crashlytics());
-        mTwitterApi = new TwitterApi().instantiate();
+
+        Answers.getInstance().logCustom(new CustomEvent("Action mode entered"));
 
         int uiOptions = getWindow().getDecorView().getSystemUiVisibility();
         getWindow().getDecorView().setSystemUiVisibility(uiOptions
@@ -204,6 +207,8 @@ public class ActionActivity extends AppCompatActivity {
         public void onPictureTaken(byte[] jpeg) {
             super.onPictureTaken(jpeg);
 
+            Answers.getInstance().logCustom(new CustomEvent("Picture capture successful"));
+
             Bitmap bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.length);
 
             File output = ExternalStorage.getOutputMediaFile(ExternalStorage.MEDIA_TYPE_IMAGE);
@@ -239,30 +244,48 @@ public class ActionActivity extends AppCompatActivity {
         public void onVideoTaken(File video) {
             super.onVideoTaken(video);
 
+            Answers.getInstance().logCustom(new CustomEvent("Video capture successful"));
+
             File output = ExternalStorage.getOutputMediaFile(ExternalStorage.MEDIA_TYPE_VIDEO);
 
             if (output != null) {
-                try (FileInputStream is = new FileInputStream(video);
-                     FileOutputStream os = new FileOutputStream(output)) {
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = is.read(buffer)) > 0) {
-                        os.write(buffer, 0, length);
-                    }
+                try {
+                    MediaTranscoder.getInstance().transcodeVideo(
+                            video.getAbsolutePath(),
+                            output.getAbsolutePath(),
+                            MediaFormatStrategyPresets.createAndroid720pStrategy(2048000, 128000, 1),
+                            new MediaTranscoder.Listener() {
+                                @Override
+                                public void onTranscodeProgress(double progress) {
+                                }
 
-                    realm.executeTransaction(realm1 -> {
-                        Report report = realm1.createObject(Report.class);
-                        report.setType(Report.TYPE_VIDEO);
+                                @Override
+                                public void onTranscodeCompleted() {
+                                    realm.executeTransaction(realm1 -> {
+                                        Report report = realm1.createObject(Report.class);
+                                        report.setType(Report.TYPE_VIDEO);
 
-                        Location l = mActionLocationListener.getLocation();
-                        if (l != null) {
-                            report.setLatitude(l.getLatitude());
-                            report.setLongitude(l.getLongitude());
-                        }
+                                        Location l = mActionLocationListener.getLocation();
+                                        if (l != null) {
+                                            report.setLatitude(l.getLatitude());
+                                            report.setLongitude(l.getLongitude());
+                                        }
 
-                        report.setTimestamp(new Date().getTime());
-                        report.setMediaAbsolutePath(output.getAbsolutePath());
-                    });
+                                        report.setTimestamp(new Date().getTime());
+                                        report.setMediaAbsolutePath(output.getAbsolutePath());
+                                    });
+                                }
+
+                                @Override
+                                public void onTranscodeCanceled() {
+                                    Log.e(getClass().getName(), "onTranscodeCanceled");
+                                }
+
+                                @Override
+                                public void onTranscodeFailed(Exception exception) {
+                                    Log.e(getClass().getName(), "onTranscodeFailed");
+                                }
+                            });
                 } catch (Exception e) {
                     Log.e(getClass().getName(), "Error writing video", e);
                 }
@@ -305,6 +328,7 @@ public class ActionActivity extends AppCompatActivity {
                         state = State.PHOTO;
                         mCameraView.captureImage();
                         state = State.IDLE;
+                        Answers.getInstance().logCustom(new CustomEvent("Photo capture requested"));
                     }
                     break;
                 case TouchTypeDetector.SWIPE_DIR_UP:
@@ -315,10 +339,13 @@ public class ActionActivity extends AppCompatActivity {
                             state = State.IDLE;
                             mCameraView.stopRecordingVideo();
                         }, 30000);
+                        Answers.getInstance().logCustom(new CustomEvent("Video capture requested"));
                     }
                     break;
                 default:
-                    finish();
+                    if (state == State.IDLE) {
+                        finish();
+                    }
                     break;
             }
         }

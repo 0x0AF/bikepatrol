@@ -20,6 +20,10 @@ import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.MenuItem;
 
+import com.crashlytics.android.answers.Answers;
+import com.crashlytics.android.answers.ContentViewEvent;
+import com.crashlytics.android.answers.CustomEvent;
+import com.google.android.gms.vision.text.TextRecognizer;
 import com.mikepenz.aboutlibraries.Libs;
 import com.mikepenz.aboutlibraries.LibsBuilder;
 import com.mikepenz.aboutlibraries.util.Colors;
@@ -66,6 +70,9 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         setSupportActionBar(toolbar);
 
         Iconics.init(this);
+        new TextRecognizer.Builder(this).build();
+
+        Answers.getInstance().logCustom(new CustomEvent("App opened"));
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setImageDrawable(new IconicsDrawable(this, GoogleMaterial.Icon.gmd_add).sizeDp(24).color(Color.WHITE));
@@ -89,6 +96,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         navigationView.setCheckedItem(R.id.nav_reports);
 
         navigationView.getHeaderView(0).findViewById(R.id.view_reports).setOnClickListener(v -> {
+            Answers.getInstance().logCustom(new CustomEvent("Community viewed"));
+
             mDrawerLayout.closeDrawer(GravityCompat.START, false);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://twitter.com/get_bike_patrol"));
@@ -116,6 +125,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         realm = Realm.getDefaultInstance();
 
         initRecyclerView();
+
+        tryRequestPermissions();
     }
 
     private void initRecyclerView() {
@@ -189,6 +200,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void shareApp() {
+        Answers.getInstance().logCustom(new CustomEvent("App shared"));
+
         Intent sendIntent = new Intent();
         sendIntent.setAction(Intent.ACTION_SEND);
         sendIntent.putExtra(Intent.EXTRA_TEXT, "Hey! Check out Bike Patrol, it's a really useful app for cyclists and commuters: \n http://twitter.com/get_bike_patrol");
@@ -197,6 +210,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void showAboutSection() {
+        Answers.getInstance().logCustom(new CustomEvent("About opened"));
+
         new LibsBuilder()
                 .withActivityStyle(Libs.ActivityStyle.LIGHT_DARK_TOOLBAR)
                 .withActivityColor(new Colors(getResources().getColor(R.color.colorPrimaryDark), getResources().getColor(R.color.colorPrimaryDark)))
