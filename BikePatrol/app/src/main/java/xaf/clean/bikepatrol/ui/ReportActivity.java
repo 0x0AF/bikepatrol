@@ -27,6 +27,7 @@ import android.widget.Toast;
 import com.crashlytics.android.answers.Answers;
 import com.crashlytics.android.answers.CustomEvent;
 import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.text.Text;
 import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 import com.mikepenz.google_material_typeface_library.GoogleMaterial;
@@ -149,9 +150,12 @@ public class ReportActivity extends AppCompatActivity {
                     Log.i(ReportActivity.class.getName(), textBlock.getValue());
 
                     PatternMatcher patternMatcher = new PatternMatcher(PATTERN_GERMAN_LP, 3);
-                    if (patternMatcher.match(textBlock.getValue())) {
-                        Log.i(ReportActivity.class.getName(), "MATCH");
-                        runOnUiThread(() -> reportDescription.getText().append(textBlock.getValue()));
+                    for (String s: textBlock.getValue().split(" ")) {
+                        if (patternMatcher.match(s)) {
+                            Answers.getInstance().logCustom(new CustomEvent("License plate recognized"));
+                            Log.i(ReportActivity.class.getName(), "MATCH");
+                            runOnUiThread(() -> reportDescription.getText().append(textBlock.getValue()));
+                        }
                     }
                 }
             });
